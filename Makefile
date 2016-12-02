@@ -11,4 +11,4 @@ kmsmock.go:
 test: s3mock.go kmsmock.go
 	go test -v ./...
 
-.PHONY: get-deps get-mockgen test
+.PHONY: get-deps test
