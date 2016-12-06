@@ -42,6 +42,22 @@ func updateEnv(scanner *bufio.Scanner, key string, value string) (*bytes.Buffer,
 	return buf, nil
 }
 
+func deleteEnv(scanner *bufio.Scanner, key string) (*bytes.Buffer, error) {
+	buf := new(bytes.Buffer)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		tokens := strings.Split(line, "=")
+		if len(tokens) >= 2 && tokens[0] != key {
+			if _, err := buf.WriteString(fmt.Sprintln(line)); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return buf, nil
+}
+
 func compareWithEnvFile(ui cli.Ui, compareTo string) (err error) {
 	env, err := readEnvFile()
 	if err != nil {
@@ -67,14 +83,14 @@ func compareWithEnvFile(ui cli.Ui, compareTo string) (err error) {
 }
 
 func readEnvFile() ([]byte, error) {
-	s3Key, err := getStringConfig("S3Key")
+	config, err := readConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	outFile, err := getStringConfigWithDefault("OutFile", *s3Key)
-	if err != nil {
-		return nil, err
+	outFile := config.OutFile
+	if outFile == nil {
+		outFile = config.S3Key
 	}
 
 	bs, err := ioutil.ReadFile(*outFile)
@@ -88,14 +104,14 @@ func readEnvFile() ([]byte, error) {
 }
 
 func writeEnvFile(env []byte) (err error) {
-	s3Key, err := getStringConfig("S3Key")
+	config, err := readConfig()
 	if err != nil {
 		return
 	}
 
-	outFile, err := getStringConfigWithDefault("OutFile", *s3Key)
-	if err != nil {
-		return
+	outFile := config.OutFile
+	if outFile == nil {
+		outFile = config.S3Key
 	}
 
 	file, err := os.Create(*outFile)

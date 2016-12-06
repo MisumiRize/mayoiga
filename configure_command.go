@@ -49,14 +49,20 @@ func (c *configureCommand) Run(args []string) int {
 		return 1
 	}
 
+	c.ui.Output("mayoiga is successful configured")
+	c.ui.Output("do not forget to add '.mayoiga.json' to .gitignore")
 	return 0
 }
 
 func (c *configureCommand) Help() string {
 	helpText := `
-Usage: mayoiga configure -confif [KEY=VALUE]
+Usage: mayoiga configure -config [KEY=VALUE]
 
 	Configure mayoiga.
+
+Options:
+
+  -config 'foo=bar'  Set a variable in the Mayoiga configuration.
 `
 	return strings.TrimSpace(helpText)
 }

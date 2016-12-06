@@ -6,46 +6,20 @@ import (
 	"testing"
 )
 
-func TestGetStringConfig(t *testing.T) {
+func TestAssertConfig_RequiresRegion(t *testing.T) {
 	resetConfig(t)
 
-	createJSON(t, map[string]string{
-		"S3Key": "test_key",
-	})
-
-	config, err := getStringConfig("S3Key")
-	if err != nil {
+	data := map[string]string{
+		"S3Bucket": "bucket",
+		"S3Key":    "key",
+	}
+	if err := writeConfig(data); err != nil {
 		t.Fatalf(err.Error())
 	}
 
-	if *config != "test_key" {
-		t.Fatalf("assertion failed. actual: %s", *config)
-	}
-}
-
-func TestGetStringConfig_Error(t *testing.T) {
-	resetConfig(t)
-
-	createJSON(t, map[string]string{})
-
-	_, err := getStringConfig("")
+	err := assertConfig()
 	if err == nil {
 		t.Fatalf("error expected, but there is no error")
-	}
-}
-
-func TestGetStringConfigWithDefault(t *testing.T) {
-	resetConfig(t)
-
-	createJSON(t, map[string]string{})
-
-	config, err := getStringConfigWithDefault("S3Key", "test_key")
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
-
-	if *config != "test_key" {
-		t.Fatalf("assertion failed. actual: %s", *config)
 	}
 }
 
@@ -71,15 +45,6 @@ func TestWriteConfig(t *testing.T) {
 
 	if *config.S3Bucket != "test_key" {
 		t.Fatalf("S3Bucket assertion failed. actual: %s", *config.S3Bucket)
-	}
-
-	configMap, err := readConfigAsMap()
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
-
-	if configMap["InvalidKey"] != nil {
-		t.Fatalf("InvalidKey should not exist")
 	}
 }
 

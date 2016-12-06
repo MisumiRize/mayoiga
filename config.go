@@ -14,6 +14,7 @@ const (
 
 type config struct {
 	Version  int
+	Region   *string
 	S3Bucket *string
 	S3Key    *string
 	KMSKeyID *string
@@ -24,66 +25,36 @@ type configError struct {
 	err string
 }
 
-func (e *configError) Error() string {
-	return (*e).err
-}
-
-var cachedConfig map[string]interface{}
+var cachedConfig *config
 
 func assertConfig() (err error) {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return errors.New(path + " not exist. run mayoiga configure first")
 	}
 
-	s3Bucket, err := getStringConfig("S3Bucket")
-	if err != nil || len(*s3Bucket) == 0 {
+	config, err := readConfig()
+	if err != nil {
+		return err
+	}
+
+	if config.Region == nil || len(*(config.Region)) == 0 {
+		return errors.New("Region is not set. run mayoiga configure first")
+	}
+
+	if config.S3Bucket == nil || len(*(config.S3Bucket)) == 0 {
 		return errors.New("S3Bucket is not set. run mayoiga configure first")
 	}
 
-	s3Key, err := getStringConfig("S3Key")
-	if err != nil || len(*s3Key) == 0 {
+	if config.S3Key == nil || len(*(config.S3Key)) == 0 {
 		return errors.New("S3Key is not set. run mayoiga configure first")
 	}
 
 	return nil
 }
 
-func getStringConfig(key string) (*string, error) {
-	if cachedConfig == nil {
-		var err error
-		cachedConfig, err = readConfigAsMap()
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if value, ok := cachedConfig[key].(string); ok {
-		return &value, nil
-	}
-
-	return nil, &configError{err: "error"}
-}
-
-func getStringConfigWithDefault(key, defaultValue string) (config *string, err error) {
-	config, err = getStringConfig(key)
-	if err == nil {
-		return
-	}
-
-	switch err.(type) {
-	case *configError:
-		return &defaultValue, nil
-	}
-
-	return
-}
-
 func readConfig() (*config, error) {
-	_, err := os.Stat(path)
-	if os.IsNotExist(err) {
-		return &config{
-			Version: version,
-		}, nil
+	if cachedConfig != nil {
+		return cachedConfig, nil
 	}
 
 	file, err := ioutil.ReadFile(path)
@@ -95,8 +66,9 @@ func readConfig() (*config, error) {
 	if err = json.Unmarshal(file, &config); err != nil {
 		return nil, err
 	}
+	cachedConfig = &config
 
-	return &config, nil
+	return cachedConfig, nil
 }
 
 func readConfigAsMap() (map[string]interface{}, error) {

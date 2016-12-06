@@ -23,28 +23,34 @@ func (c *addCommand) Run(args []string) int {
 		return 1
 	}
 
-	flags := flag.NewFlagSet("add", flag.ContinueOnError)
-	encrypt := flags.Bool("encrypt", false, "encrypt")
-	key := flags.String("key", "", "key")
-	value := flags.String("value", "", "value")
-	if err := flags.Parse(args); err != nil {
-		c.ui.Error(err.Error())
+	if len(args) < 2 {
+		c.ui.Error(c.Help())
 		return 1
 	}
 
-	if len(*key) == 0 {
+	key := args[0]
+	value := args[1]
+
+	if len(key) == 0 {
 		c.ui.Error("key should be valid string")
 		return 1
 	}
 
+	flags := flag.NewFlagSet("add", flag.ContinueOnError)
+	encrypt := flags.Bool("encrypt", false, "encrypt")
+	if err := flags.Parse(args[2:]); err != nil {
+		c.ui.Error(err.Error())
+		return 1
+	}
+
 	if *encrypt {
-		v, err := kmsEncrypt(*value)
+		v, err := kmsEncrypt(value)
 		if err != nil {
 			c.ui.Error(err.Error())
 			return 1
 		}
 
-		value = v
+		value = *v
 	}
 
 	buf, err := s3GetObject()
@@ -60,7 +66,7 @@ func (c *addCommand) Run(args []string) int {
 		return 1
 	}
 
-	buf, err = updateEnv(bufio.NewScanner(buf), *key, *value)
+	buf, err = updateEnv(bufio.NewScanner(buf), key, value)
 	if err != nil {
 		c.ui.Error(err.Error())
 		return 1
@@ -86,9 +92,13 @@ func (c *addCommand) Run(args []string) int {
 
 func (c *addCommand) Help() string {
 	helpText := `
-Usage: mayoiga add -key [KEY] -value [VALUE]
+Usage: mayoiga add <KEY> <VALUE>
 
   Add env value and save to S3.
+
+Options:
+
+	-encrypt  Encrypt value with KMS.
 `
 	return strings.TrimSpace(helpText)
 }

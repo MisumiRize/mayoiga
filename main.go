@@ -4,8 +4,6 @@ import (
 	"os"
 
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/kms"
-	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/mitchellh/cli"
 )
 
@@ -18,18 +16,19 @@ func main() {
 		Ui:          &cli.BasicUi{Writer: os.Stdout},
 	}
 
-	sess, err := session.NewSession()
+	s, err := session.NewSession()
 	if err != nil {
 		ui.Error(err.Error())
 		os.Exit(1)
 	}
-
-	s3Svc = s3.New(sess)
-	kmsSvc = kms.New(sess)
+	sess = s
 
 	commands := map[string]cli.CommandFactory{
 		"add": func() (cli.Command, error) {
 			return &addCommand{ui: ui}, nil
+		},
+		"remove": func() (cli.Command, error) {
+			return &removeCommand{ui: ui}, nil
 		},
 		"pull": func() (cli.Command, error) {
 			return &pullCommand{ui: ui}, nil

@@ -2,13 +2,17 @@ package main
 
 import (
 	"bytes"
+	"encoding/base64"
 
 	"io"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/aws/aws-sdk-go/service/s3"
 )
+
+var sess *session.Session
 
 type s3Service interface {
 	GetObject(*s3.GetObjectInput) (*s3.GetObjectOutput, error)
@@ -17,22 +21,34 @@ type s3Service interface {
 
 var s3Svc s3Service
 
+func getS3Svc() (s3Service, error) {
+	if s3Svc == nil {
+		config, err := readConfig()
+		if err != nil {
+			return nil, err
+		}
+
+		s3Svc = s3.New(sess, &aws.Config{Region: config.Region})
+	}
+	return s3Svc, nil
+}
+
 func s3GetObject() (*bytes.Buffer, error) {
-	s3Bucket, err := getStringConfig("S3Bucket")
+	config, err := readConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	s3Key, err := getStringConfig("S3Key")
+	svc, err := getS3Svc()
 	if err != nil {
 		return nil, err
 	}
 
 	params := &s3.GetObjectInput{
-		Bucket: aws.String(*s3Bucket),
-		Key:    aws.String(*s3Key),
+		Bucket: config.S3Bucket,
+		Key:    config.S3Key,
 	}
-	res, err := s3Svc.GetObject(params)
+	res, err := svc.GetObject(params)
 	if err != nil {
 		return nil, err
 	}
@@ -47,22 +63,22 @@ func s3GetObject() (*bytes.Buffer, error) {
 }
 
 func s3PutObject(body io.ReadSeeker) (err error) {
-	s3Bucket, err := getStringConfig("S3Bucket")
+	config, err := readConfig()
 	if err != nil {
 		return
 	}
 
-	s3Key, err := getStringConfig("S3Key")
+	svc, err := getS3Svc()
 	if err != nil {
 		return
 	}
 
 	putParams := &s3.PutObjectInput{
-		Bucket: aws.String(*s3Bucket),
-		Key:    aws.String(*s3Key),
+		Bucket: config.S3Bucket,
+		Key:    config.S3Key,
 		Body:   body,
 	}
-	_, err = s3Svc.PutObject(putParams)
+	_, err = svc.PutObject(putParams)
 	return
 }
 
@@ -72,21 +88,38 @@ type kmsService interface {
 
 var kmsSvc kmsService
 
+func getKmsSvc() (kmsService, error) {
+	if kmsSvc == nil {
+		config, err := readConfig()
+		if err != nil {
+			return nil, err
+		}
+
+		kmsSvc = kms.New(sess, &aws.Config{Region: config.Region})
+	}
+	return kmsSvc, nil
+}
+
 func kmsEncrypt(value string) (*string, error) {
-	keyID, err := getStringConfig("KMSKeyId")
+	config, err := readConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	svc, err := getKmsSvc()
 	if err != nil {
 		return nil, err
 	}
 
 	encParams := &kms.EncryptInput{
-		KeyId:     aws.String(*keyID),
+		KeyId:     config.KMSKeyID,
 		Plaintext: []byte(value),
 	}
-	res, err := kmsSvc.Encrypt(encParams)
+	res, err := svc.Encrypt(encParams)
 	if err != nil {
 		return nil, err
 	}
 
-	v := string(res.CiphertextBlob)
+	v := base64.StdEncoding.EncodeToString(res.CiphertextBlob)
 	return &v, nil
 }
