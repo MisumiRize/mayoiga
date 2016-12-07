@@ -11,4 +11,7 @@ kmsmock.go:
 test: s3mock.go kmsmock.go
 	go test -v ./...
 
-.PHONY: get-deps test
+install:
+	go build && mv mayoiga $(GOPATH)/bin/mayoiga
+
+.PHONY: get-deps test install
