@@ -51,7 +51,7 @@ func assertConfig() (err error) {
 	}
 
 	if config.MappingS3Key == nil || len(*(config.MappingS3Key)) == 0 {
-		return errors.New("S3Bucket is not set. run mayoiga configure first")
+		return errors.New("MappingS3Key is not set. run mayoiga configure first")
 	}
 
 	return nil
