@@ -30,6 +30,9 @@ func main() {
 		"remove": func() (cli.Command, error) {
 			return &removeCommand{ui: ui}, nil
 		},
+		"map": func() (cli.Command, error) {
+			return &mapCommand{ui: ui}, nil
+		},
 		"pull": func() (cli.Command, error) {
 			return &pullCommand{ui: ui}, nil
 		},

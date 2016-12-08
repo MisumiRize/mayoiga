@@ -53,7 +53,13 @@ func (c *addCommand) Run(args []string) int {
 		value = *v
 	}
 
-	buf, err := s3GetObject()
+	config, err := readConfig()
+	if err != nil {
+		c.ui.Error(err.Error())
+		return 1
+	}
+
+	buf, err := s3GetObject(config.S3Key)
 	if aerr, ok := err.(awserr.Error); ok {
 		if aerr.Code() == "NoSuchKey" {
 			buf = new(bytes.Buffer)
@@ -82,7 +88,23 @@ func (c *addCommand) Run(args []string) int {
 		return 1
 	}
 
-	if err = s3PutObject(bytes.NewReader(buf.Bytes())); err != nil {
+	if err = s3PutObject(config.S3Key, bytes.NewReader(buf.Bytes())); err != nil {
+		c.ui.Error(err.Error())
+		return 1
+	}
+
+	mappings, err := fetchMappings()
+	if err != nil {
+		c.ui.Error(err.Error())
+		return 1
+	}
+
+	if err = writeMappingsFile(mappings); err != nil {
+		c.ui.Error(err.Error())
+		return 1
+	}
+
+	if err = generateMappedEnvFiles(buf, mappings); err != nil {
 		c.ui.Error(err.Error())
 		return 1
 	}

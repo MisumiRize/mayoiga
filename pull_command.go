@@ -24,7 +24,13 @@ func (c *pullCommand) Run(args []string) int {
 		return 1
 	}
 
-	buf, err := s3GetObject()
+	config, err := readConfig()
+	if err != nil {
+		c.ui.Error(err.Error())
+		return 1
+	}
+
+	buf, err := s3GetObject(config.S3Key)
 	if err != nil {
 		c.ui.Error(err.Error())
 		return 1
@@ -38,6 +44,22 @@ func (c *pullCommand) Run(args []string) int {
 	}
 
 	if err = writeEnvFile(buf.Bytes()); err != nil {
+		c.ui.Error(err.Error())
+		return 1
+	}
+
+	mappings, err := fetchMappings()
+	if err != nil {
+		c.ui.Error(err.Error())
+		return 1
+	}
+
+	if err = writeMappingsFile(mappings); err != nil {
+		c.ui.Error(err.Error())
+		return 1
+	}
+
+	if err = generateMappedEnvFiles(buf, mappings); err != nil {
 		c.ui.Error(err.Error())
 		return 1
 	}

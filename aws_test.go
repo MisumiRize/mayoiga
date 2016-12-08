@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/golang/mock/gomock"
 )
@@ -31,7 +32,7 @@ func TestS3GetObject(t *testing.T) {
 	}, nil)
 	s3Svc = mockS3
 
-	buf, err := s3GetObject()
+	buf, err := s3GetObject(aws.String("key"))
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -62,7 +63,30 @@ func TestS3PutObject(t *testing.T) {
 	}).Return(&s3.PutObjectOutput{}, nil)
 	s3Svc = mockS3
 
-	err := s3PutObject(payload)
+	err := s3PutObject(aws.String("key"), payload)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+}
+
+func TestKMSEncrypt(t *testing.T) {
+	resetConfig(t)
+
+	createJSON(t, map[string]string{
+		"KMSKeyID": "id",
+	})
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockKms := NewMockKMSAPI(ctrl)
+	mockKms.EXPECT().Encrypt(&kms.EncryptInput{
+		KeyId:     aws.String("id"),
+		Plaintext: []byte("PAYLOAD"),
+	}).Return(&kms.EncryptOutput{}, nil)
+	kmsSvc = mockKms
+
+	_, err := kmsEncrypt("PAYLOAD")
 	if err != nil {
 		t.Fatalf(err.Error())
 	}

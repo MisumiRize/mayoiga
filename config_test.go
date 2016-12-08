@@ -50,10 +50,8 @@ func TestWriteConfig(t *testing.T) {
 
 func resetConfig(t *testing.T) {
 	cachedConfig = nil
-	if _, err := os.Stat(path); !os.IsNotExist(err) {
-		if err := os.Remove(path); err != nil {
-			t.Fatalf("config file remove failed")
-		}
+	if err := os.RemoveAll(configDir); err != nil {
+		t.Fatalf("config file remove failed")
 	}
 }
 
@@ -63,7 +61,16 @@ func createJSON(t *testing.T, data map[string]string) {
 		t.Fatalf(err.Error())
 	}
 
-	file, err := os.Create(path)
+	_, err = os.Stat(configDir)
+	if os.IsNotExist(err) {
+		if err = os.Mkdir(configDir, 0755); err != nil {
+			return
+		}
+	} else if err != nil {
+		return
+	}
+
+	file, err := os.Create(configPath)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}

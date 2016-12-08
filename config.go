@@ -8,17 +8,18 @@ import (
 )
 
 const (
-	version = 1
-	path    = "./.mayoiga.json"
+	version    = 1
+	configDir  = "./.mayoiga"
+	configPath = "./.mayoiga/mayoiga.json"
 )
 
 type config struct {
-	Version  int
-	Region   *string
-	S3Bucket *string
-	S3Key    *string
-	KMSKeyID *string
-	OutFile  *string
+	Version      int
+	Region       *string
+	S3Bucket     *string
+	S3Key        *string
+	MappingS3Key *string
+	KMSKeyID     *string
 }
 
 type configError struct {
@@ -28,8 +29,8 @@ type configError struct {
 var cachedConfig *config
 
 func assertConfig() (err error) {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return errors.New(path + " not exist. run mayoiga configure first")
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		return errors.New(configPath + " not exist. run mayoiga configure first")
 	}
 
 	config, err := readConfig()
@@ -49,6 +50,10 @@ func assertConfig() (err error) {
 		return errors.New("S3Key is not set. run mayoiga configure first")
 	}
 
+	if config.MappingS3Key == nil || len(*(config.MappingS3Key)) == 0 {
+		return errors.New("S3Bucket is not set. run mayoiga configure first")
+	}
+
 	return nil
 }
 
@@ -57,7 +62,7 @@ func readConfig() (*config, error) {
 		return cachedConfig, nil
 	}
 
-	file, err := ioutil.ReadFile(path)
+	file, err := ioutil.ReadFile(configPath)
 	if err != nil {
 		return nil, err
 	}
@@ -72,14 +77,14 @@ func readConfig() (*config, error) {
 }
 
 func readConfigAsMap() (map[string]interface{}, error) {
-	_, err := os.Stat(path)
+	_, err := os.Stat(configPath)
 	if os.IsNotExist(err) {
 		return map[string]interface{}{
 			"Version": version,
 		}, nil
 	}
 
-	file, err := ioutil.ReadFile(path)
+	file, err := ioutil.ReadFile(configPath)
 	if err != nil {
 		return nil, err
 	}
@@ -116,12 +121,21 @@ func writeConfig(newConfig map[string]string) (err error) {
 		return
 	}
 
-	j, err = json.Marshal(config)
+	j, err = json.MarshalIndent(config, "", "  ")
 	if err != nil {
 		return
 	}
 
-	file, err := os.Create(path)
+	_, err = os.Stat(configDir)
+	if os.IsNotExist(err) {
+		if err = os.Mkdir(configDir, 0755); err != nil {
+			return
+		}
+	} else if err != nil {
+		return
+	}
+
+	file, err := os.Create(configPath)
 	if err != nil {
 		return
 	}

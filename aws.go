@@ -33,7 +33,7 @@ func getS3Svc() (s3Service, error) {
 	return s3Svc, nil
 }
 
-func s3GetObject() (*bytes.Buffer, error) {
+func s3GetObject(key *string) (*bytes.Buffer, error) {
 	config, err := readConfig()
 	if err != nil {
 		return nil, err
@@ -46,7 +46,7 @@ func s3GetObject() (*bytes.Buffer, error) {
 
 	params := &s3.GetObjectInput{
 		Bucket: config.S3Bucket,
-		Key:    config.S3Key,
+		Key:    key,
 	}
 	res, err := svc.GetObject(params)
 	if err != nil {
@@ -62,7 +62,7 @@ func s3GetObject() (*bytes.Buffer, error) {
 	return buf, nil
 }
 
-func s3PutObject(body io.ReadSeeker) (err error) {
+func s3PutObject(key *string, body io.ReadSeeker) (err error) {
 	config, err := readConfig()
 	if err != nil {
 		return
@@ -75,7 +75,7 @@ func s3PutObject(body io.ReadSeeker) (err error) {
 
 	putParams := &s3.PutObjectInput{
 		Bucket: config.S3Bucket,
-		Key:    config.S3Key,
+		Key:    key,
 		Body:   body,
 	}
 	_, err = svc.PutObject(putParams)
