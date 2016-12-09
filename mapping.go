@@ -137,3 +137,32 @@ func generateMappedEnvFiles(envBody *bytes.Buffer, mappings map[string]mapping) 
 
 	return nil
 }
+
+func removeVariable(mappings map[string]mapping, variable string) map[string]mapping {
+	removed := map[string]mapping{}
+
+	for file, m := range mappings {
+		variables := []string{}
+		for _, v := range m.Variables {
+			if v != variable {
+				variables = append(variables, v)
+			}
+		}
+
+		aliases := map[string]string{}
+		for k, v := range m.Aliases {
+			if v != variable {
+				aliases[k] = v
+			}
+		}
+
+		if len(variables) > 0 || len(aliases) > 0 {
+			removed[file] = mapping{
+				Variables: variables,
+				Aliases:   aliases,
+			}
+		}
+	}
+
+	return removed
+}

@@ -13,6 +13,11 @@ type mapCommand struct {
 }
 
 func (c *mapCommand) Run(args []string) int {
+	if err := assertConfig(); err != nil {
+		c.ui.Error(err.Error())
+		return 1
+	}
+
 	if len(args) < 1 || args[0][:1] == "-" {
 		c.ui.Error(c.Help())
 		return 1
@@ -21,7 +26,7 @@ func (c *mapCommand) Run(args []string) int {
 	var variables stringFlags
 	var aliases mapFlags
 
-	flags := flag.NewFlagSet("var", flag.ContinueOnError)
+	flags := flag.NewFlagSet("map", flag.ContinueOnError)
 	flags.Var(&variables, "variable", "variable")
 	flags.Var(&aliases, "alias", "alias")
 	if err := flags.Parse(args[1:]); err != nil {
@@ -62,14 +67,12 @@ func (c *mapCommand) Run(args []string) int {
 	newAliases := mapping.Aliases
 
 	for _, v := range variables {
-		newVariables = addVariable(newVariables, v)
+		newVariables = addIfNotExist(newVariables, v)
 	}
 
 	for k, v := range aliases {
 		newAliases[k] = v
 	}
-
-	sort.Strings(newVariables)
 
 	mapping.Variables = newVariables
 	mapping.Aliases = newAliases
@@ -111,11 +114,15 @@ func (c *mapCommand) Synopsis() string {
 	return "Add mapping to file and save to S3"
 }
 
-func addVariable(variables []string, variable string) []string {
+func addIfNotExist(variables []string, variable string) []string {
 	for _, v := range variables {
 		if v == variable {
 			return variables
 		}
 	}
-	return append(variables, variable)
+
+	newVariables := append(variables, variable)
+	sort.Strings(newVariables)
+
+	return newVariables
 }

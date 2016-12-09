@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"flag"
 	"strings"
 
 	"github.com/mitchellh/cli"
@@ -18,8 +19,15 @@ func (c *removeCommand) Run(args []string) int {
 		return 1
 	}
 
-	if len(args) < 1 {
+	if len(args) < 1 || args[0][:1] == "-" {
 		c.ui.Error(c.Help())
+		return 1
+	}
+
+	flags := flag.NewFlagSet("remove", flag.ContinueOnError)
+	prune := flags.Bool("prune", false, "prune")
+	if err := flags.Parse(args[1:]); err != nil {
+		c.ui.Error(err.Error())
 		return 1
 	}
 
@@ -56,15 +64,30 @@ func (c *removeCommand) Run(args []string) int {
 		return 1
 	}
 
+	if config.MappingS3Key == nil {
+		return 0
+	}
+
 	mappings, err := fetchMappings()
 	if err != nil {
 		c.ui.Error(err.Error())
 		return 1
 	}
 
+	if *prune {
+		mappings = removeVariable(mappings, args[0])
+	}
+
 	if err = writeMappingsFile(mappings); err != nil {
 		c.ui.Error(err.Error())
 		return 1
+	}
+
+	if *prune {
+		if err = putMappingsToS3(mappings); err != nil {
+			c.ui.Error(err.Error())
+			return 1
+		}
 	}
 
 	if err = generateMappedEnvFiles(buf, mappings); err != nil {
@@ -79,7 +102,11 @@ func (c *removeCommand) Help() string {
 	helpText := `
 Usage: mayoiga remove <KEY>
 
-	Remove env value and save to S3.
+	Remove env valiable and save to S3.
+
+Options:
+
+	-prune  Delete mapping associated with the variable.
 `
 	return strings.TrimSpace(helpText)
 }

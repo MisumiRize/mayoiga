@@ -93,6 +93,10 @@ func (c *addCommand) Run(args []string) int {
 		return 1
 	}
 
+	if config.MappingS3Key == nil {
+		return 0
+	}
+
 	mappings, err := fetchMappings()
 	if err != nil {
 		c.ui.Error(err.Error())
