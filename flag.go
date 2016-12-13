@@ -63,22 +63,30 @@ func (f *mappingFlags) Set(value string) error {
 		alias := strings.Join(tokens[2:], ":")
 
 		if m, ok := flags[file]; ok {
-			m.Aliases[variable] = alias
+			if m.Aliases == nil {
+				m.Aliases = map[string]string{variable: alias}
+			} else {
+				m.Aliases[variable] = alias
+			}
+
 			flags[file] = m
 		} else {
 			flags[file] = mapping{
-				Variables: []string{},
-				Aliases:   map[string]string{variable: alias},
+				Aliases: map[string]string{variable: alias},
 			}
 		}
 	} else {
 		if m, ok := flags[file]; ok {
-			m.Variables = addIfNotExist(m.Variables, variable)
+			if m.Variables == nil {
+				m.Variables = []string{variable}
+			} else {
+				m.Variables = addIfNotExist(m.Variables, variable)
+			}
+
 			flags[file] = m
 		} else {
 			flags[file] = mapping{
 				Variables: []string{variable},
-				Aliases:   map[string]string{},
 			}
 		}
 	}

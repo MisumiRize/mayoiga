@@ -62,21 +62,18 @@ func (c *mapCommand) Run(args []string) int {
 		return 1
 	}
 
-	mapping := mappings[args[0]]
-	newVariables := mapping.Variables
-	newAliases := mapping.Aliases
-
+	loaded := mappings[args[0]]
+	newVariables := loaded.getVariables()
 	for _, v := range variables {
 		newVariables = addIfNotExist(newVariables, v)
 	}
 
+	newAliases := loaded.getAliases()
 	for k, v := range aliases {
 		newAliases[k] = v
 	}
 
-	mapping.Variables = newVariables
-	mapping.Aliases = newAliases
-	mappings[args[0]] = mapping
+	mappings[args[0]] = mapping{newVariables, newAliases}
 
 	if err = writeMappingsFile(mappings); err != nil {
 		c.ui.Error(err.Error())

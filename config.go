@@ -22,10 +22,6 @@ type config struct {
 	KMSKeyID     *string
 }
 
-type configError struct {
-	err string
-}
-
 var cachedConfig *config
 
 func assertConfig() (err error) {

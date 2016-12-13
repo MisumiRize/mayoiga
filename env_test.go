@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -124,6 +125,24 @@ BAZ=baz
 
 	if strings.TrimSpace(env.String()) != strings.TrimSpace(envText) {
 		t.Fatalf("assertion failed actual: %s", env.String())
+	}
+}
+
+func TestParseEnv(t *testing.T) {
+	envText := `
+FOO=foo
+BAR=bar
+BAZ=baz
+`
+	reader := strings.NewReader(envText)
+	env := parseEnv(bufio.NewScanner(reader))
+	expected := map[string]string{
+		"FOO": "foo",
+		"BAR": "bar",
+		"BAZ": "baz",
+	}
+	if !reflect.DeepEqual(env, expected) {
+		t.Fatalf("assertion failed actial: %#v", env)
 	}
 }
 

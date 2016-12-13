@@ -23,6 +23,19 @@ func TestAssertConfig_RequiresRegion(t *testing.T) {
 	}
 }
 
+func TestReadConfigAsMap_ReturnsNoError_WhenFileIsAbsent(t *testing.T) {
+	resetConfig(t)
+
+	config, err := readConfigAsMap()
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	if len(config) != 1 {
+		t.Fatalf("Empty config should have 1 entry, but there are %d", len(config))
+	}
+}
+
 func TestWriteConfig(t *testing.T) {
 	resetConfig(t)
 
@@ -32,6 +45,24 @@ func TestWriteConfig(t *testing.T) {
 	}
 	if err := writeConfig(data); err != nil {
 		t.Fatalf(err.Error())
+	}
+
+	stat, err := os.Stat(configDir)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	if !stat.IsDir() {
+		t.Fatalf(configDir + " should be directory, but it is not")
+	}
+
+	stat, err = os.Stat(configPath)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	if stat.IsDir() {
+		t.Fatalf(configPath + " should not be directory, but it is")
 	}
 
 	config, err := readConfig()

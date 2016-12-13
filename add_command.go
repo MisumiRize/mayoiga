@@ -36,8 +36,10 @@ func (c *addCommand) Run(args []string) int {
 		return 1
 	}
 
+	var mappingsToAdd mappingFlags
 	flags := flag.NewFlagSet("add", flag.ContinueOnError)
 	encrypt := flags.Bool("encrypt", false, "encrypt")
+	flags.Var(&mappingsToAdd, "mapping", "mapping")
 	if err := flags.Parse(args[2:]); err != nil {
 		c.ui.Error(err.Error())
 		return 1
@@ -103,6 +105,8 @@ func (c *addCommand) Run(args []string) int {
 		return 1
 	}
 
+	mappings = mergeMappings(mappings, mappingsToAdd)
+
 	if err = writeMappingsFile(mappings); err != nil {
 		c.ui.Error(err.Error())
 		return 1
@@ -131,4 +135,18 @@ Options:
 
 func (c *addCommand) Synopsis() string {
 	return "Add env value and save to S3"
+}
+
+func mergeMappings(mergeTo map[string]mapping, mergeFrom map[string]mapping) map[string]mapping {
+	result := map[string]mapping{}
+
+	for file, mapping := range mergeTo {
+		if mappingToMerge, ok := mergeFrom[file]; ok {
+			result[file] = mapping.merge(mappingToMerge)
+		} else {
+			result[file] = mappingToMerge
+		}
+	}
+
+	return result
 }
